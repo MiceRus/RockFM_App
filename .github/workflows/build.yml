@@ -11,7 +11,7 @@ jobs:
         python-version: '3.10'
     - name: Install dependencies
       run: |
-        pip install pystray Pillow pycaw comtypes python-vlc pyinstaller
+        pip install pystray Pillow pycaw comtypes pygame pyinstaller
     - name: Create Python Script
       run: |
         echo "import threading" > radio.py
@@ -23,7 +23,8 @@ jobs:
         echo "from ctypes import cast, POINTER" >> radio.py
         echo "import tkinter as tk" >> radio.py
         echo "from tkinter import ttk" >> radio.py
-        echo "import vlc" >> radio.py
+        echo "import pygame" >> radio.py
+        echo "import urllib.request" >> radio.py
         echo "import os" >> radio.py
         echo "STREAM_URL = 'https://main.hostingradio.ru:80/rock-256'" >> radio.py
         echo "ICON_SIZE = 64" >> radio.py
@@ -39,22 +40,26 @@ jobs:
         echo "class RadioPlayer:" >> radio.py
         echo "    def __init__(self, url):" >> radio.py
         echo "        self.url = url" >> radio.py
-        echo "        self.instance = vlc.Instance('--no-video', '--quiet')" >> radio.py
-        echo "        self.player = self.instance.media_player_new()" >> radio.py
-        echo "        self.media = self.instance.media_new(self.url)" >> radio.py
-        echo "        self.player.set_media(self.media)" >> radio.py
+        echo "        pygame.mixer.init()" >> radio.py
         echo "        self.playing = False" >> radio.py
         echo "    def play(self):" >> radio.py
-        echo "        if not self.playing:" >> radio.py
-        echo "            self.player.play()" >> radio.py
+        echo "        if self.playing: return" >> radio.py
+        echo "        try:" >> radio.py
+        echo "            # Открываем поток и загружаем в память (для pygame нужно скачать)" >> radio.py
+        echo "            req = urllib.request.urlopen(self.url)" >> radio.py
+        echo "            self.data = req.read()" >> radio.py
+        echo "            # В pygame нет прямого стриминга, но есть загрузка из файла" >> radio.py
+        echo "            import io" >> radio.py
+        echo "            pygame.mixer.music.load(io.BytesIO(self.data))" >> radio.py
+        echo "            pygame.mixer.music.play(-1)" >> radio.py
         echo "            self.playing = True" >> radio.py
+        echo "            print('Radio started.')" >> radio.py
+        echo "        except Exception as e:" >> radio.py
+        echo "            print(f'Error: {e}')" >> radio.py
         echo "    def stop(self):" >> radio.py
         echo "        if self.playing:" >> radio.py
-        echo "            self.player.stop()" >> radio.py
+        echo "            pygame.mixer.music.stop()" >> radio.py
         echo "            self.playing = False" >> radio.py
-        echo "        if self.instance:" >> radio.py
-        echo "            self.instance.release()" >> radio.py
-        echo "            self.instance = None" >> radio.py
         echo "class VolumePopup:" >> radio.py
         echo "    def __init__(self, volume_ctrl):" >> radio.py
         echo "        self.volume_ctrl = volume_ctrl" >> radio.py
