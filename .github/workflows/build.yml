@@ -1,0 +1,123 @@
+name: Build RockFM EXE
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        pip install pystray Pillow pycaw comtypes python-vlc pyinstaller
+    - name: Create Python Script
+      run: |
+        echo "import threading" > radio.py
+        echo "import time" >> radio.py
+        echo "import pystray" >> radio.py
+        echo "from PIL import Image, ImageDraw" >> radio.py
+        echo "from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume" >> radio.py
+        echo "from comtypes import CLSCTX_ALL" >> radio.py
+        echo "from ctypes import cast, POINTER" >> radio.py
+        echo "import tkinter as tk" >> radio.py
+        echo "from tkinter import ttk" >> radio.py
+        echo "import vlc" >> radio.py
+        echo "import os" >> radio.py
+        echo "STREAM_URL = 'https://main.hostingradio.ru:80/rock-256'" >> radio.py
+        echo "ICON_SIZE = 64" >> radio.py
+        echo "class VolumeControl:" >> radio.py
+        echo "    def __init__(self):" >> radio.py
+        echo "        devices = AudioUtilities.GetSpeakers()" >> radio.py
+        echo "        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)" >> radio.py
+        echo "        self.volume = cast(interface, POINTER(IAudioEndpointVolume))" >> radio.py
+        echo "    def get_volume(self):" >> radio.py
+        echo "        return int(self.volume.GetMasterVolumeLevelScalar() * 100)" >> radio.py
+        echo "    def set_volume(self, percent):" >> radio.py
+        echo "        self.volume.SetMasterVolumeLevelScalar(percent / 100.0, None)" >> radio.py
+        echo "class RadioPlayer:" >> radio.py
+        echo "    def __init__(self, url):" >> radio.py
+        echo "        self.url = url" >> radio.py
+        echo "        self.instance = vlc.Instance('--no-video', '--quiet')" >> radio.py
+        echo "        self.player = self.instance.media_player_new()" >> radio.py
+        echo "        self.media = self.instance.media_new(self.url)" >> radio.py
+        echo "        self.player.set_media(self.media)" >> radio.py
+        echo "        self.playing = False" >> radio.py
+        echo "    def play(self):" >> radio.py
+        echo "        if not self.playing:" >> radio.py
+        echo "            self.player.play()" >> radio.py
+        echo "            self.playing = True" >> radio.py
+        echo "    def stop(self):" >> radio.py
+        echo "        if self.playing:" >> radio.py
+        echo "            self.player.stop()" >> radio.py
+        echo "            self.playing = False" >> radio.py
+        echo "        if self.instance:" >> radio.py
+        echo "            self.instance.release()" >> radio.py
+        echo "            self.instance = None" >> radio.py
+        echo "class VolumePopup:" >> radio.py
+        echo "    def __init__(self, volume_ctrl):" >> radio.py
+        echo "        self.volume_ctrl = volume_ctrl" >> radio.py
+        echo "        self.root = None" >> radio.py
+        echo "    def show(self):" >> radio.py
+        echo "        if self.root:" >> radio.py
+        echo "            self.root.deiconify()" >> radio.py
+        echo "            self.root.focus_force()" >> radio.py
+        echo "            return" >> radio.py
+        echo "        self.root = tk.Tk()" >> radio.py
+        echo "        self.root.title('RockFM Volume')" >> radio.py
+        echo "        self.root.geometry('250x80+100+100')" >> radio.py
+        echo "        self.root.attributes('-topmost', True)" >> radio.py
+        echo "        self.root.overrideredirect(True)" >> radio.py
+        echo "        style = ttk.Style()" >> radio.py
+        echo "        style.theme_use('clam')" >> radio.py
+        echo "        self.scale = ttk.Scale(self.root, from_=0, to=100, orient='horizontal', command=self.on_slider_move)" >> radio.py
+        echo "        self.scale.set(self.volume_ctrl.get_volume())" >> radio.py
+        echo "        self.scale.pack(pady=20, padx=20, fill='x')" >> radio.py
+        echo "        self.root.bind('<FocusOut>', self.hide)" >> radio.py
+        echo "        self.root.bind('<Escape>', self.hide)" >> radio.py
+        echo "    def on_slider_move(self, value):" >> radio.py
+        echo "        self.volume_ctrl.set_volume(int(float(value)))" >> radio.py
+        echo "    def hide(self, event=None):" >> radio.py
+        echo "        if self.root:" >> radio.py
+        echo "            self.root.withdraw()" >> radio.py
+        echo "    def run(self):" >> radio.py
+        echo "        if self.root:" >> radio.py
+        echo "            self.root.mainloop()" >> radio.py
+        echo "def create_tray_icon():" >> radio.py
+        echo "    image = Image.new('RGB', (ICON_SIZE, ICON_SIZE), color=(30, 30, 30))" >> radio.py
+        echo "    dc = ImageDraw.Draw(image)" >> radio.py
+        echo "    dc.ellipse((10, 10, ICON_SIZE-10, ICON_SIZE-10), fill=(100, 149, 237))" >> radio.py
+        echo "    dc.line((20, 32, 44, 32), fill='white', width=4)" >> radio.py
+        echo "    dc.line((28, 24, 28, 40), fill='white', width=4)" >> radio.py
+        echo "    return image" >> radio.py
+        echo "def main():" >> radio.py
+        echo "    vol_ctrl = VolumeControl()" >> radio.py
+        echo "    player = RadioPlayer(STREAM_URL)" >> radio.py
+        echo "    popup = VolumePopup(vol_ctrl)" >> radio.py
+        echo "    player.play()" >> radio.py
+        echo "    def on_left_click(icon, item):" >> radio.py
+        echo "        threading.Thread(target=popup.show, daemon=True).start()" >> radio.py
+        echo "        time.sleep(0.1)" >> radio.py
+        echo "        popup.run()" >> radio.py
+        echo "    def on_quit(icon, item):" >> radio.py
+        echo "        player.stop()" >> radio.py
+        echo "        popup.hide()" >> radio.py
+        echo "        icon.stop()" >> radio.py
+        echo "        os._exit(0)" >> radio.py
+        echo "    menu = pystray.Menu(" >> radio.py
+        echo "        pystray.MenuItem('Показать громкость', on_left_click, default=True)," >> radio.py
+        echo "        pystray.MenuItem('Выход', on_quit)" >> radio.py
+        echo "    )" >> radio.py
+        echo "    icon = pystray.Icon('RockFM', create_tray_icon(), 'RockFM Radio', menu)" >> radio.py
+        echo "    icon.run()" >> radio.py
+        echo "if __name__ == '__main__':" >> radio.py
+        echo "    main()" >> radio.py
+    - name: Build with PyInstaller
+      run: |
+        pyinstaller --onefile --noconsole radio.py
+    - name: Upload EXE
+      uses: actions/upload-artifact@v4
+      with:
+        name: RockFM_App
+        path: dist/radio.exe
