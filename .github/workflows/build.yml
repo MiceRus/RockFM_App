@@ -10,116 +10,92 @@ jobs:
       with:
         python-version: '3.10'
     - name: Install dependencies
+      run: pip install pyinstaller
+    - name: Create Python Wrapper
       run: |
-        pip install pystray Pillow pycaw comtypes pygame pyinstaller
-    - name: Create Python Script
-      run: |
-        echo "import threading" > radio.py
-        echo "import time" >> radio.py
-        echo "import pystray" >> radio.py
-        echo "from PIL import Image, ImageDraw" >> radio.py
-        echo "from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume" >> radio.py
-        echo "from comtypes import CLSCTX_ALL" >> radio.py
-        echo "from ctypes import cast, POINTER" >> radio.py
-        echo "import tkinter as tk" >> radio.py
-        echo "from tkinter import ttk" >> radio.py
-        echo "import pygame" >> radio.py
-        echo "import urllib.request" >> radio.py
-        echo "import os" >> radio.py
-        echo "STREAM_URL = 'https://main.hostingradio.ru:80/rock-256'" >> radio.py
-        echo "ICON_SIZE = 64" >> radio.py
-        echo "class VolumeControl:" >> radio.py
-        echo "    def __init__(self):" >> radio.py
-        echo "        devices = AudioUtilities.GetSpeakers()" >> radio.py
-        echo "        interface = devices._dev.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)" >> radio.py
-        echo "        self.volume = cast(interface, POINTER(IAudioEndpointVolume))" >> radio.py
-        echo "    def get_volume(self):" >> radio.py
-        echo "        return int(self.volume.GetMasterVolumeLevelScalar() * 100)" >> radio.py
-        echo "    def set_volume(self, percent):" >> radio.py
-        echo "        self.volume.SetMasterVolumeLevelScalar(percent / 100.0, None)" >> radio.py
-        echo "class RadioPlayer:" >> radio.py
-        echo "    def __init__(self, url):" >> radio.py
-        echo "        self.url = url" >> radio.py
-        echo "        pygame.mixer.init()" >> radio.py
-        echo "        self.playing = False" >> radio.py
-        echo "    def play(self):" >> radio.py
-        echo "        if self.playing: return" >> radio.py
-        echo "        try:" >> radio.py
-        echo "            req = urllib.request.urlopen(self.url)" >> radio.py
-        echo "            self.data = req.read()" >> radio.py
-        echo "            import io" >> radio.py
-        echo "            pygame.mixer.music.load(io.BytesIO(self.data))" >> radio.py
-        echo "            pygame.mixer.music.play(-1)" >> radio.py
-        echo "            self.playing = True" >> radio.py
-        echo "        except Exception as e:" >> radio.py
-        echo "            print(f'Error: {e}')" >> radio.py
-        echo "    def stop(self):" >> radio.py
-        echo "        if self.playing:" >> radio.py
-        echo "            pygame.mixer.music.stop()" >> radio.py
-        echo "            self.playing = False" >> radio.py
-        echo "class VolumePopup:" >> radio.py
-        echo "    def __init__(self, volume_ctrl):" >> radio.py
-        echo "        self.volume_ctrl = volume_ctrl" >> radio.py
-        echo "        self.root = None" >> radio.py
-        echo "    def show(self):" >> radio.py
-        echo "        if self.root:" >> radio.py
-        echo "            self.root.deiconify()" >> radio.py
-        echo "            self.root.focus_force()" >> radio.py
-        echo "            return" >> radio.py
-        echo "        self.root = tk.Tk()" >> radio.py
-        echo "        self.root.title('RockFM Volume')" >> radio.py
-        echo "        self.root.geometry('250x80+100+100')" >> radio.py
-        echo "        self.root.attributes('-topmost', True)" >> radio.py
-        echo "        self.root.overrideredirect(True)" >> radio.py
-        echo "        style = ttk.Style()" >> radio.py
-        echo "        style.theme_use('clam')" >> radio.py
-        echo "        self.scale = ttk.Scale(self.root, from_=0, to=100, orient='horizontal', command=self.on_slider_move)" >> radio.py
-        echo "        self.scale.set(self.volume_ctrl.get_volume())" >> radio.py
-        echo "        self.scale.pack(pady=20, padx=20, fill='x')" >> radio.py
-        echo "        self.root.bind('<FocusOut>', self.hide)" >> radio.py
-        echo "        self.root.bind('<Escape>', self.hide)" >> radio.py
-        echo "    def on_slider_move(self, value):" >> radio.py
-        echo "        self.volume_ctrl.set_volume(int(float(value)))" >> radio.py
-        echo "    def hide(self, event=None):" >> radio.py
-        echo "        if self.root:" >> radio.py
-        echo "            self.root.withdraw()" >> radio.py
-        echo "    def run(self):" >> radio.py
-        echo "        if self.root:" >> radio.py
-        echo "            self.root.mainloop()" >> radio.py
-        echo "def create_tray_icon():" >> radio.py
-        echo "    image = Image.new('RGB', (ICON_SIZE, ICON_SIZE), color=(30, 30, 30))" >> radio.py
-        echo "    dc = ImageDraw.Draw(image)" >> radio.py
-        echo "    dc.ellipse((10, 10, ICON_SIZE-10, ICON_SIZE-10), fill=(100, 149, 237))" >> radio.py
-        echo "    dc.line((20, 32, 44, 32), fill='white', width=4)" >> radio.py
-        echo "    dc.line((28, 24, 28, 40), fill='white', width=4)" >> radio.py
-        echo "    return image" >> radio.py
-        echo "def main():" >> radio.py
-        echo "    vol_ctrl = VolumeControl()" >> radio.py
-        echo "    player = RadioPlayer(STREAM_URL)" >> radio.py
-        echo "    popup = VolumePopup(vol_ctrl)" >> radio.py
-        echo "    player.play()" >> radio.py
-        echo "    def on_left_click(icon, item):" >> radio.py
-        echo "        threading.Thread(target=popup.show, daemon=True).start()" >> radio.py
-        echo "        time.sleep(0.1)" >> radio.py
-        echo "        popup.run()" >> radio.py
-        echo "    def on_quit(icon, item):" >> radio.py
-        echo "        player.stop()" >> radio.py
-        echo "        popup.hide()" >> radio.py
-        echo "        icon.stop()" >> radio.py
-        echo "        os._exit(0)" >> radio.py
-        echo "    menu = pystray.Menu(" >> radio.py
-        echo "        pystray.MenuItem('Показать громкость', on_left_click, default=True)," >> radio.py
-        echo "        pystray.MenuItem('Выход', on_quit)" >> radio.py
-        echo "    )" >> radio.py
-        echo "    icon = pystray.Icon('RockFM', create_tray_icon(), 'RockFM Radio', menu)" >> radio.py
-        echo "    icon.run()" >> radio.py
-        echo "if __name__ == '__main__':" >> radio.py
-        echo "    main()" >> radio.py
+        echo "import subprocess" > wrapper.py
+        echo "import os" >> wrapper.py
+        echo "import sys" >> wrapper.py
+        echo "import tempfile" >> wrapper.py
+        echo "ps_script = r'''" >> wrapper.py
+        echo "Add-Type -AssemblyName System.Windows.Forms" >> wrapper.py
+        echo "Add-Type -AssemblyName System.Drawing" >> wrapper.py
+        echo "\$code = @\"" >> wrapper.py
+        echo "using System;" >> wrapper.py
+        echo "using System.Runtime.InteropServices;" >> wrapper.py
+        echo "[Guid(\"5CDF2C82-841E-4546-9722-0CF74078229A\"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]" >> wrapper.py
+        echo "interface IAudioEndpointVolume {" >> wrapper.py
+        echo "    int f(); int g(); int h(); int i(); int SetMasterVolumeLevelScalar(float fLevel, Guid pguidEventContext);" >> wrapper.py
+        echo "    int j(); int GetMasterVolumeLevelScalar(out float pfLevel); int k(); int l(); int m(); int n();" >> wrapper.py
+        echo "    int SetMute(bool bMute, Guid pguidEventContext); int GetMute(out bool pbMute);" >> wrapper.py
+        echo "}" >> wrapper.py
+        echo "[Guid(\"D666063F-1587-4E43-81F1-B948E807363F\"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]" >> wrapper.py
+        echo "interface IMMDevice { int Activate(ref Guid id, int clsCtx, IntPtr activationParams, [MarshalAs(UnmanagedType.IUnknown)] out object a); }" >> wrapper.py
+        echo "[Guid(\"A95664D2-9614-4F35-A746-DE8DB63617E6\"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]" >> wrapper.py
+        echo "interface IMMDeviceEnumerator { int f(); int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice endpoint); }" >> wrapper.py
+        echo "[ComImport, Guid(\"BCDE0395-E52F-467C-8E3D-C4579291692E\")]" >> wrapper.py
+        echo "class MMDeviceEnumeratorComObject { }" >> wrapper.py
+        echo "public class Audio {" >> wrapper.py
+        echo "    static IAudioEndpointVolume Vol() {" >> wrapper.py
+        echo "        var enumerator = new MMDeviceEnumeratorComObject() as IMMDeviceEnumerator;" >> wrapper.py
+        echo "        IMMDevice dev = null; enumerator.GetDefaultAudioEndpoint(0, 1, out dev);" >> wrapper.py
+        echo "        Guid iid = typeof(IAudioEndpointVolume).GUID; object o;" >> wrapper.py
+        echo "        dev.Activate(ref iid, 1, IntPtr.Zero, out o); return (IAudioEndpointVolume)o;" >> wrapper.py
+        echo "    }" >> wrapper.py
+        echo "    public static float GetVolume() { float v; Vol().GetMasterVolumeLevelScalar(out v); return v; }" >> wrapper.py
+        echo "    public static void SetVolume(float volume) { Vol().SetMasterVolumeLevelScalar(volume, Guid.Empty); }" >> wrapper.py
+        echo "}" >> wrapper.py
+        echo "\"@" >> wrapper.py
+        echo "Add-Type -TypeDefinition \$code -Language CSharp" >> wrapper.py
+        echo "function Show-VolumePopup {" >> wrapper.py
+        echo "    if (\$global:PopupForm -ne \$null -and -not \$global:PopupForm.IsDisposed) { \$global:PopupForm.Close(); return }" >> wrapper.py
+        echo "    \$global:PopupForm = New-Object System.Windows.Forms.Form" >> wrapper.py
+        echo "    \$global:PopupForm.Text = 'RockFM Volume'" >> wrapper.py
+        echo "    \$global:PopupForm.Size = New-Object System.Drawing.Size(250, 100)" >> wrapper.py
+        echo "    \$global:PopupForm.StartPosition = 'CenterScreen'" >> wrapper.py
+        echo "    \$global:PopupForm.TopMost = \$true" >> wrapper.py
+        echo "    \$global:PopupForm.FormBorderStyle = 'FixedToolWindow'" >> wrapper.py
+        echo "    \$global:PopupForm.ShowInTaskbar = \$false" >> wrapper.py
+        echo "    \$trackBar = New-Object System.Windows.Forms.TrackBar" >> wrapper.py
+        echo "    \$trackBar.Minimum = 0; \$trackBar.Maximum = 100" >> wrapper.py
+        echo "    \$trackBar.Value = [math]::Round([Audio]::GetVolume() * 100)" >> wrapper.py
+        echo "    \$trackBar.Location = New-Object System.Drawing.Point(20, 10)" >> wrapper.py
+        echo "    \$trackBar.Width = 200; \$trackBar.TickFrequency = 10" >> wrapper.py
+        echo "    \$trackBar.add_Scroll({ [Audio]::SetVolume(\$trackBar.Value / 100.0) })" >> wrapper.py
+        echo "    \$global:PopupForm.add_KeyDown({ param(\$sender, \$e) if (\$e.KeyCode -eq 'Escape') { \$global:PopupForm.Close() } })" >> wrapper.py
+        echo "    \$global:FocusTimer = New-Object System.Windows.Forms.Timer" >> wrapper.py
+        echo "    \$global:FocusTimer.Interval = 100" >> wrapper.py
+        echo "    \$global:FocusTimer.add_Tick({ if (\$global:PopupForm -ne \$null -and -not \$global:PopupForm.IsDisposed) { if (-not \$global:PopupForm.ContainsFocus) { \$global:FocusTimer.Stop(); \$global:PopupForm.Close() } } })" >> wrapper.py
+        echo "    \$global:PopupForm.Add_Shown({ \$global:PopupForm.Activate(); \$global:FocusTimer.Start() })" >> wrapper.py
+        echo "    \$global:PopupForm.Add_FormClosed({ \$global:FocusTimer.Stop(); \$global:FocusTimer.Dispose() })" >> wrapper.py
+        echo "    \$global:PopupForm.Controls.Add(\$trackBar)" >> wrapper.py
+        echo "    \$global:PopupForm.Show()" >> wrapper.py
+        echo "}" >> wrapper.py
+        echo "\$notifyIcon = New-Object System.Windows.Forms.NotifyIcon" >> wrapper.py
+        echo "\$notifyIcon.Icon = [System.Drawing.SystemIcons]::Application" >> wrapper.py
+        echo "\$notifyIcon.Text = 'RockFM Radio'" >> wrapper.py
+        echo "\$notifyIcon.Visible = \$true" >> wrapper.py
+        echo "\$notifyIcon.add_MouseClick({ param(\$sender, \$e) if (\$e.Button -eq [System.Windows.Forms.MouseButtons]::Left) { Show-VolumePopup } })" >> wrapper.py
+        echo "\$contextMenu = New-Object System.Windows.Forms.ContextMenuStrip" >> wrapper.py
+        echo "\$exitItem = New-Object System.Windows.Forms.ToolStripMenuItem('Выход')" >> wrapper.py
+        echo "\$exitItem.add_Click({ Get-Process msedge -ErrorAction SilentlyContinue | Where-Object { \$_.CommandLine -match 'headless' } | Stop-Process -Force -ErrorAction SilentlyContinue; \$notifyIcon.Visible = \$false; \$notifyIcon.Dispose(); [System.Windows.Forms.Application]::Exit() })" >> wrapper.py
+        echo "\$contextMenu.Items.Add(\$exitItem)" >> wrapper.py
+        echo "\$notifyIcon.ContextMenuStrip = \$contextMenu" >> wrapper.py
+        echo "[System.Windows.Forms.Application]::Run()" >> wrapper.py
+        echo "'''" >> wrapper.py
+        echo "def main():" >> wrapper.py
+        echo "    subprocess.Popen(['msedge.exe', '--headless=new', '--disable-gpu', '--autoplay-policy=no-user-gesture-required', 'https://main.hostingradio.ru:80/rock-256'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW)" >> wrapper.py
+        echo "    fd, path = tempfile.mkstemp(suffix='.ps1')" >> wrapper.py
+        echo "    with os.fdopen(fd, 'w', encoding='utf-8') as f:" >> wrapper.py
+        echo "        f.write(ps_script)" >> wrapper.py
+        echo "    subprocess.Popen(['powershell.exe', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', path], creationflags=subprocess.CREATE_NO_WINDOW)" >> wrapper.py
+        echo "if __name__ == '__main__':" >> wrapper.py
+        echo "    main()" >> wrapper.py
     - name: Build with PyInstaller
       run: |
-        pyinstaller --onefile --noconsole radio.py
+        pyinstaller --onefile --noconsole wrapper.py
     - name: Upload EXE
       uses: actions/upload-artifact@v4
       with:
         name: RockFM_App
-        path: dist/radio.exe
+        path: dist/wrapper.exe
