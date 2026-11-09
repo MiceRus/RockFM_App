@@ -31,7 +31,7 @@ jobs:
         echo "class VolumeControl:" >> radio.py
         echo "    def __init__(self):" >> radio.py
         echo "        devices = AudioUtilities.GetSpeakers()" >> radio.py
-        echo "        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)" >> radio.py
+        echo "        interface = devices._dev.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)" >> radio.py
         echo "        self.volume = cast(interface, POINTER(IAudioEndpointVolume))" >> radio.py
         echo "    def get_volume(self):" >> radio.py
         echo "        return int(self.volume.GetMasterVolumeLevelScalar() * 100)" >> radio.py
@@ -45,15 +45,12 @@ jobs:
         echo "    def play(self):" >> radio.py
         echo "        if self.playing: return" >> radio.py
         echo "        try:" >> radio.py
-        echo "            # Открываем поток и загружаем в память (для pygame нужно скачать)" >> radio.py
         echo "            req = urllib.request.urlopen(self.url)" >> radio.py
         echo "            self.data = req.read()" >> radio.py
-        echo "            # В pygame нет прямого стриминга, но есть загрузка из файла" >> radio.py
         echo "            import io" >> radio.py
         echo "            pygame.mixer.music.load(io.BytesIO(self.data))" >> radio.py
         echo "            pygame.mixer.music.play(-1)" >> radio.py
         echo "            self.playing = True" >> radio.py
-        echo "            print('Radio started.')" >> radio.py
         echo "        except Exception as e:" >> radio.py
         echo "            print(f'Error: {e}')" >> radio.py
         echo "    def stop(self):" >> radio.py
